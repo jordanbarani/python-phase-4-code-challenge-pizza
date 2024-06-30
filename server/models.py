@@ -19,7 +19,7 @@ class Restaurant(db.Model, SerializerMixin):
     address = db.Column(db.String, nullable=False)
 
     restaurant_pizzas = relationship('RestaurantPizza', back_populates='restaurant')
-    pizzas = relationship('Pizza', secondary='restaurant_pizzas', back_populates='restaurants')
+    pizzas = relationship('Pizza', secondary='restaurant_pizzas', back_populates='restaurants', overlaps="restaurant_pizzas")
 
     serialize_rules = ('-restaurant_pizzas.restaurant', '-pizzas.restaurants')
 
@@ -42,7 +42,7 @@ class Pizza(db.Model, SerializerMixin):
     ingredients = db.Column(db.String, nullable=False)
 
     restaurant_pizzas = relationship('RestaurantPizza', back_populates='pizza')
-    restaurants = relationship('Restaurant', secondary='restaurant_pizzas', back_populates='pizzas')
+    restaurants = relationship('Restaurant', secondary='restaurant_pizzas', back_populates='pizzas',overlaps="restaurant_pizzas")
 
     serialize_rules = ('-restaurant_pizzas.pizza', '-restaurants.pizzas')
 
@@ -63,11 +63,11 @@ class RestaurantPizza(db.Model, SerializerMixin):
     pizza_id = db.Column(db.Integer, db.ForeignKey('pizzas.id'), nullable=False)
     price = db.Column(db.Integer, nullable=False)
 
-    restaurant = relationship("Restaurant", back_populates="restaurant_pizzas")
-    pizza = relationship("Pizza", back_populates="restaurant_pizzas")
+    restaurant = relationship("Restaurant", back_populates="restaurant_pizzas",overlaps="pizzas,restaurants")
+    pizza = relationship("Pizza", back_populates="restaurant_pizzas", overlaps="pizzas,restaurants")
 
     serialize_rules = ('-restaurant', '-pizza')
-
+    
     @db.validates('price')
     def validate_price(self, key, price):
         if not (1 <= price <= 30):

@@ -154,38 +154,42 @@ class TestApp:
                 RestaurantPizza.restaurant_id == restaurant.id, RestaurantPizza.pizza_id == pizza.id).first()
             assert query_result.price == 3
 
-    def test_400_for_validation_error(self):
-        '''returns a 400 status code and error message if a POST request to /restaurant_pizzas fails.'''
+def test_400_for_validation_error(self):
+    """Returns a 400 status code and error message if a POST request to /restaurant_pizzas fails."""
+    with app.app_context():
+        fake = Faker()
+        pizza = Pizza(name=fake.name(), ingredients=fake.sentence())
+        restaurant = Restaurant(name=fake.name(), address=fake.address())
+        db.session.add(pizza)
+        db.session.add(restaurant)
+        db.session.commit()
 
-        with app.app_context():
-            fake = Faker()
-            pizza = Pizza(name=fake.name(), ingredients=fake.sentence())
-            restaurant = Restaurant(name=fake.name(), address=fake.address())
-            db.session.add(pizza)
-            db.session.add(restaurant)
-            db.session.commit()
+        # Test with price = 0
+        response = app.test_client().post(
+            '/restaurant_pizzas',
+            json={
+                "price": 0,
+                "pizza_id": pizza.id,
+                "restaurant_id": restaurant.id,
+            }
+        )
 
-            # price not in 1..30
-            response = app.test_client().post(
-                '/restaurant_pizzas',
-                json={
-                    "price": 0,
-                    "pizza_id": pizza.id,
-                    "restaurant_id": restaurant.id,
-                }
-            )
+        assert response.status_code == 400
+        response_json = response.json
+        assert 'errors' in response_json and response_json['errors'] == ["validation errors"], \
+            f"Expected {'errors' in response_json and response_json['errors'] == ['validation errors']} but got {response_json}"
 
-            assert response.status_code == 400
-            assert response.json['errors'] == ["validation errors"]
+        # Test with price = 31
+        response = app.test_client().post(
+            '/restaurant_pizzas',
+            json={
+                "price": 31,
+                "pizza_id": pizza.id,
+                "restaurant_id": restaurant.id,
+            }
+        )
 
-            response = app.test_client().post(
-                '/restaurant_pizzas',
-                json={
-                    "price": 31,
-                    "pizza_id": pizza.id,
-                    "restaurant_id": restaurant.id,
-                }
-            )
-
-            assert response.status_code == 400
-            assert response.json['errors'] == ["validation errors"]
+        assert response.status_code == 400
+        response_json = response.json
+        assert 'errors' in response_json and response_json['errors'] == ["validation errors"], \
+            f"Expected {'errors' in response_json and response_json['errors'] == ['validation errors']} but got {response_json}"

@@ -24,25 +24,24 @@ def get_restaurants():
 
 @app.get('/restaurants/<int:id>')
 def get_restaurant(id):
-    restaurant = db.session.get(Restaurant, id)
+    restaurant = db.session.query(Restaurant).filter_by(id=id).first()
     if restaurant is None:
         return jsonify({'error': 'Restaurant not found'}), 404
     return jsonify(restaurant.to_dict())
 
 @app.delete('/restaurants/<int:id>')
 def delete_restaurant(id):
-    restaurant = db.session.get(Restaurant, id)
+    restaurant = db.session.query(Restaurant).filter_by(id=id).first()
     if restaurant is None:
         return jsonify({'error': 'Restaurant not found'}), 404
     db.session.delete(restaurant)
     db.session.commit()
     return '', 204
-
-@app.get('/pizzas')
+@app.route('/pizzas', methods=['GET'])
 def get_pizzas():
     try:
         pizzas = Pizza.query.all()
-        pizzas_data = [pizza.to_dict(only=("id", "ingredients", "name")) for pizza in pizzas]
+        pizzas_data = [pizza.to_dict() for pizza in pizzas]
         return jsonify(pizzas_data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -71,15 +70,18 @@ def create_restaurant_pizza():
         restaurant_pizza = RestaurantPizza(restaurant_id=restaurant_id, pizza_id=pizza_id, price=price)
         db.session.add(restaurant_pizza)
         db.session.commit()
+
         # Fetch restaurant details and include them in the response
-        restaurant = Restaurant.query.get(restaurant_id)
+        restaurant = db.session.query(Restaurant).filter_by(id=restaurant_id).first()
         if not restaurant:
             return jsonify({'error': 'Restaurant not found'}), 404
+
         return jsonify({
             **restaurant_pizza.to_dict(),
             'restaurant': restaurant.to_dict()
         }), 201
     except Exception as e:
+        db.session.rollback() 
         return jsonify({'error': str(e)}), 400
 
 

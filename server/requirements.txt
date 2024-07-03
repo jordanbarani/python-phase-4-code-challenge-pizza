@@ -1,0 +1,7 @@
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-RESTful
+Faker
+pytest
+sqlalchemy_serializer
